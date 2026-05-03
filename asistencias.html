@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial - Asistencias QR</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar-container"></aside>
+        
+        <main class="main-content">
+            <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>📋 Historial de Asistencias</h1>
+                    <p style="color: var(--text-muted);">Registros en tiempo real (TRL5)</p>
+                </div>
+                <button onclick="clearHistory()" class="btn" style="background: #fee2e2; color: #991b1b;">Limpiar Todo</button>
+            </header>
+
+            <div class="card">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID Doc</th>
+                                <th>Estudiante</th>
+                                <th>Grado</th>
+                                <th>Fecha</th>
+                                <th>Hora Entrada</th>
+                                <th>Hora Salida</th>
+                                <th>Evidencia Notif.</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="asistenciasTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        Auth.checkSession();
+
+        function loadAsistencias() {
+            const list = Storage.getAsistencias();
+            const tbody = document.getElementById('asistenciasTable');
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 3rem;">No hay registros de asistencia hoy</td></tr>';
+                return;
+            }
+            tbody.innerHTML = list.map(a => `
+                <tr>
+                    <td><code>${a.id_doc}</code></td>
+                    <td><strong>${a.nombre}</strong></td>
+                    <td>${a.grado}°</td>
+                    <td>${a.fecha}</td>
+                    <td style="color: var(--success); font-weight: 600;">${a.hora_entrada || '-'}</td>
+                    <td style="color: var(--danger); font-weight: 600;">${a.hora_salida || '-'}</td>
+                    <td style="text-align: center;">
+                        <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem; align-items: center;">
+                            ${a.notificado_entrada ? `<span style="color:var(--success); background:#f0fdf4; padding:2px 8px; border-radius:10px; border:1px solid #bbf7d0"><i class="fab fa-whatsapp"></i> Ent. Enviada</span>` : ''}
+                            ${a.notificado_salida ? `<span style="color:var(--secondary); background:#eff6ff; padding:2px 8px; border-radius:10px; border:1px solid #bfdbfe"><i class="fab fa-whatsapp"></i> Sal. Enviada</span>` : ''}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge ${a.hora_salida ? 'badge-danger' : 'badge-success'}">
+                            ${a.hora_salida ? 'COMPLETO' : 'EN COLEGIO'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.clearHistory = () => {
+            if(confirm('¿Seguro que deseas borrar todo el historial?')) {
+                Storage.saveData('asistencias', []);
+                loadAsistencias();
+            }
+        };
+
+        loadAsistencias();
+    </script>
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes Inteligentes - Juan de Dios Cock</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- CDNs -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar-container"></aside>
+        
+        <main class="main-content">
+            <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h1><i class="fas fa-chart-line"></i> Reportes y Evidencia Digital</h1>
+                    <p style="color: var(--text-muted);">Análisis avanzado de asistencia y notificaciones</p>
+                </div>
+                <div style="display: flex; gap: 10px;" class="no-print">
+                    <button onclick="exportToExcel()" class="btn" style="background: #1d6f42; color: white;">
+                        <i class="fas fa-file-excel"></i> Exportar Excel
+                    </button>
+                    <button onclick="window.print()" class="btn" style="background: var(--secondary); color: white;">
+                        <i class="fas fa-print"></i> Imprimir PDF
+                    </button>
+                </div>
+            </header>
+
+            <!-- Filtros -->
+            <div class="card no-print" style="margin-bottom: 2rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem;">
+                    <div class="form-group">
+                        <label><i class="fas fa-calendar-day"></i> Fecha Inicio</label>
+                        <input type="date" id="dateStart">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-calendar-day"></i> Fecha Fin</label>
+                        <input type="date" id="dateEnd">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-users"></i> Grupo</label>
+                        <select id="groupFilter">
+                            <option value="all">Todos los grupos</option>
+                            <option value="10-1">10-1</option>
+                            <option value="10-2">10-2</option>
+                            <option value="10-3">10-3</option>
+                            <option value="11-1">11-1</option>
+                            <option value="11-2">11-2</option>
+                            <option value="11-3">11-3</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: flex-end;">
+                        <button onclick="generateReport()" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                            <i class="fas fa-sync-alt"></i> Generar Reporte
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard de Estadísticas -->
+            <div class="stats-grid" style="margin-bottom: 2rem;">
+                <div class="stat-card" style="border-left: 5px solid var(--secondary);">
+                    <div class="stat-label">Total Registros</div>
+                    <div class="stat-value" id="repTotal">0</div>
+                    <small style="color: var(--text-muted);">Eventos capturados</small>
+                </div>
+                <div class="stat-card" style="border-left: 5px solid var(--success);">
+                    <div class="stat-label">Notificaciones OK</div>
+                    <div class="stat-value" id="repNotifs">0</div>
+                    <small style="color: var(--success);">WhatsApp / Email enviados</small>
+                </div>
+                <div class="stat-card" style="border-left: 5px solid var(--accent);">
+                    <div class="stat-label">Promedio Estadía</div>
+                    <div class="stat-value" id="repAvg">0h</div>
+                    <small style="color: var(--text-muted);">Tiempo en colegio</small>
+                </div>
+                <div class="stat-card" style="border-left: 5px solid var(--primary);">
+                    <div class="stat-label">% Cumplimiento</div>
+                    <div class="stat-value" id="repPorcentaje">0%</div>
+                    <small style="color: var(--text-muted);">Salidas registradas</small>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                <div class="card">
+                    <h3 style="margin-bottom: 1.5rem;"><i class="fas fa-chart-pie"></i> Estado de Permanencia</h3>
+                    <div style="height: 300px;">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 style="margin-bottom: 1.5rem;"><i class="fas fa-chart-bar"></i> Asistencia por Grupo</h3>
+                    <div style="height: 300px;">
+                        <canvas id="gradeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla Detallada -->
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3><i class="fas fa-list-check"></i> Detalle de Registros y Evidencia</h3>
+                </div>
+                <div class="table-container">
+                    <table id="reportTableData">
+                        <thead style="background: #f8fafc;">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Estudiante</th>
+                                <th>Grupo</th>
+                                <th><i class="fas fa-sign-in-alt" style="color: var(--success);"></i> Entrada</th>
+                                <th><i class="fas fa-sign-out-alt" style="color: var(--primary);"></i> Salida</th>
+                                <th>Estadía</th>
+                                <th>Evidencia Digital</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            .sidebar { display: none !important; }
+            .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+            .app-container { display: block !important; }
+            .card { border: none !important; box-shadow: none !important; margin-bottom: 20px !important; }
+            canvas { max-width: 100% !important; height: auto !important; }
+        }
+        
+        table th { padding: 12px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
+        table td { padding: 12px; font-size: 0.9rem; border-bottom: 1px solid #f1f5f9; }
+    </style>
+
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        Auth.checkSession();
+        let statusChart = null;
+        let gradeChart = null;
+
+        // Inicializar fechas
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('dateStart').value = today;
+        document.getElementById('dateEnd').value = today;
+
+        function calculateDiff(start, end) {
+            if (!start || !end) return 0;
+            const s = new Date(`2000/01/01 ${start}`);
+            const e = new Date(`2000/01/01 ${end}`);
+            return (e - s) / 1000 / 60 / 60; // horas
+        }
+
+        function initCharts(completas, soloEntrada, groupData) {
+            const ctxStatus = document.getElementById('statusChart').getContext('2d');
+            const ctxGrade = document.getElementById('gradeChart').getContext('2d');
+
+            if (statusChart) statusChart.destroy();
+            if (gradeChart) gradeChart.destroy();
+
+            statusChart = new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Salida Registrada', 'En Colegio'],
+                    datasets: [{
+                        data: [completas, soloEntrada],
+                        backgroundColor: ['#10b981', '#004a99'],
+                        borderWidth: 5,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            gradeChart = new Chart(ctxGrade, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(groupData),
+                    datasets: [{
+                        label: 'Asistencias',
+                        data: Object.values(groupData),
+                        backgroundColor: '#e31e24',
+                        borderRadius: 8
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function generateReport() {
+            const list = Storage.getAsistencias();
+            console.log("Datos crudos en Storage:", list);
+            
+            const startVal = document.getElementById('dateStart').value;
+            const endVal = document.getElementById('dateEnd').value;
+            const groupFilter = document.getElementById('groupFilter').value;
+
+            const filtered = list.filter(a => {
+                const matchDate = a.fecha >= startVal && a.fecha <= endVal;
+                const matchGroup = groupFilter === 'all' || a.grupo === groupFilter;
+                return matchDate && matchGroup;
+            });
+
+            console.log("Datos filtrados para el reporte:", filtered);
+
+            if (filtered.length === 0) {
+                const tbody = document.getElementById('reportTableBody');
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem;">No hay registros para este periodo.</td></tr>';
+                initCharts(0, 0, {});
+                return;
+            }
+
+            let totalNotifs = 0;
+            let totalHours = 0;
+            let countHours = 0;
+            const groupData = {};
+
+            filtered.forEach(a => {
+                if (a.notificado_entrada) totalNotifs++;
+                if (a.notificado_salida) totalNotifs++;
+                if (a.hora_entrada && a.hora_salida) {
+                    const diff = calculateDiff(a.hora_entrada, a.hora_salida);
+                    totalHours += diff;
+                    countHours++;
+                }
+                if (a.grupo) {
+                    groupData[a.grupo] = (groupData[a.grupo] || 0) + 1;
+                }
+            });
+
+            const completas = filtered.filter(a => a.hora_salida).length;
+            const soloEntrada = filtered.length - completas;
+
+            document.getElementById('repTotal').textContent = filtered.length;
+            document.getElementById('repNotifs').textContent = totalNotifs;
+            document.getElementById('repAvg').textContent = countHours > 0 ? (totalHours / countHours).toFixed(1) + 'h' : '0h';
+            document.getElementById('repPorcentaje').textContent = filtered.length > 0 ? Math.round((completas / filtered.length) * 100) + '%' : '0%';
+
+            initCharts(completas, soloEntrada, groupData);
+
+            const tbody = document.getElementById('reportTableBody');
+            tbody.innerHTML = filtered.map(a => `
+                <tr>
+                    <td>${a.fecha}</td>
+                    <td><strong>${a.nombre}</strong></td>
+                    <td>${a.grupo || '-'}</td>
+                    <td style="color: var(--success); font-weight: 500;">${a.hora_entrada || '-'}</td>
+                    <td style="color: var(--primary); font-weight: 500;">${a.hora_salida || '-'}</td>
+                    <td>${calculateDiff(a.hora_entrada, a.hora_salida).toFixed(1)}h</td>
+                    <td>
+                        <div style="display: flex; gap: 8px; font-size: 0.8rem;">
+                            ${a.notificado_entrada ? '<span title="Entrada Notificada" style="color:var(--success)"><i class="fab fa-whatsapp"></i> <i class="fas fa-check"></i></span>' : ''}
+                            ${a.notificado_salida ? '<span title="Salida Notificada" style="color:var(--secondary)"><i class="fab fa-whatsapp"></i> <i class="fas fa-check"></i></span>' : ''}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function exportToExcel() {
+            const table = document.getElementById("reportTableData");
+            const wb = XLSX.utils.table_to_book(table, { sheet: "Evidencia de Asistencia" });
+            XLSX.writeFile(wb, "Reporte_Evidencia_JuanDeDios.xlsx");
+        }
+
+        // Sincronización Automática: Si hay un escaneo en otra pestaña, el reporte se actualiza solo
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'asistencias') {
+                console.log("Sincronización automática detectada...");
+                generateReport();
+            }
+        });
+
+        generateReport();
+    </script>
+</body>
+</html>

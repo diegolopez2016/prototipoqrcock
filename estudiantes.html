@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Estudiantes - Juan de Dios Cock</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar-container"></aside>
+        
+        <main class="main-content">
+            <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h1><i class="fas fa-user-graduate"></i> Gestión de Estudiantes</h1>
+                    <p style="color: var(--text-muted);">Administra la base de datos y vinculación de acudientes</p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="downloadTemplate()" class="btn" style="background: #334155; color: white;">
+                        <i class="fas fa-file-download"></i> Plantilla
+                    </button>
+                    <label class="btn" style="background: #1d6f42; color: white; cursor: pointer;">
+                        <i class="fas fa-file-import"></i> Importar Excel
+                        <input type="file" id="excelImport" style="display: none;" onchange="importExcel(this)">
+                    </label>
+                </div>
+            </header>
+
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
+                <!-- Formulario -->
+                <div class="card">
+                    <h3><i class="fas fa-user-plus"></i> Nuevo Estudiante</h3>
+                    <form id="estForm" style="margin-top: 1.5rem;">
+                        <div class="form-group">
+                            <label>ID / Documento</label>
+                            <input type="text" id="id" required>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="form-group">
+                                <label>Primer Nombre</label>
+                                <input type="text" id="nom1" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Primer Apellido</label>
+                                <input type="text" id="ape1" required>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="form-group">
+                                <label>Grupo</label>
+                                <select id="grupo">
+                                    <option value="10-1">10-1</option>
+                                    <option value="10-2">10-2</option>
+                                    <option value="10-3">10-3</option>
+                                    <option value="11-1">11-1</option>
+                                    <option value="11-2">11-2</option>
+                                    <option value="11-3">11-3</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Sexo</label>
+                                <select id="sexo">
+                                    <option value="M">Masculino</option>
+                                    <option value="F">Femenino</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid var(--border);">
+                        <h4 style="margin-bottom: 1rem; color: var(--secondary);"><i class="fas fa-users"></i> Datos del Acudiente</h4>
+                        
+                        <div class="form-group">
+                            <label>Nombre del Acudiente</label>
+                            <input type="text" id="acudiente_nom" required>
+                        </div>
+                        <div class="form-group">
+                            <label>WhatsApp (Celular)</label>
+                            <input type="tel" id="acudiente_tel" placeholder="300..." required>
+                        </div>
+                        <div class="form-group">
+                            <label>Correo Electrónico</label>
+                            <input type="email" id="acudiente_mail" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 1rem;">
+                            <i class="fas fa-save"></i> Guardar Estudiante
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Tabla -->
+                <div class="card">
+                    <h3><i class="fas fa-list"></i> Estudiantes Registrados</h3>
+                    <div class="table-container" style="margin-top: 1rem;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Documento</th>
+                                    <th>Estudiante</th>
+                                    <th>Acudiente</th>
+                                    <th>Contacto</th>
+                                    <th>Carnet QR</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="estTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        Auth.checkSession();
+
+        function loadEstudiantes() {
+            const list = Storage.getEstudiantes();
+            const tbody = document.getElementById('estTableBody');
+            tbody.innerHTML = list.map(e => `
+                <tr>
+                    <td><code>${e.id}</code></td>
+                    <td><strong>${e.nom1} ${e.ape1}</strong><br><small>Grupo: ${e.grupo}</small></td>
+                    <td>${e.acudiente_nom || '-'}</td>
+                    <td>
+                        <div style="font-size: 0.85rem;">
+                            <i class="fab fa-whatsapp" style="color: #25d366;"></i> ${e.acudiente_tel || '-'}<br>
+                            <i class="fas fa-envelope" style="color: #334155;"></i> ${e.acudiente_mail || '-'}
+                        </div>
+                    </td>
+                    <td style="text-align:center;">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=${e.id}" 
+                             alt="QR" style="border: 1px solid #ddd; padding: 2px; background: white; cursor: pointer;"
+                             onclick="window.open('https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${e.id}')">
+                    </td>
+                    <td>
+                        <button onclick="deleteEst('${e.id}')" class="btn" style="padding: 5px 10px; color: var(--danger);"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deleteEst(id) {
+            if (confirm('¿Eliminar estudiante?')) {
+                const list = Storage.getEstudiantes().filter(e => e.id !== id);
+                Storage.saveData('estudiantes', list);
+                loadEstudiantes();
+            }
+        }
+
+        document.getElementById('estForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const est = {
+                id: document.getElementById('id').value,
+                nom1: document.getElementById('nom1').value,
+                ape1: document.getElementById('ape1').value,
+                grupo: document.getElementById('grupo').value,
+                sexo: document.getElementById('sexo').value,
+                acudiente_nom: document.getElementById('acudiente_nom').value,
+                acudiente_tel: document.getElementById('acudiente_tel').value,
+                acudiente_mail: document.getElementById('acudiente_mail').value
+            };
+            Storage.addEstudiante(est);
+            e.target.reset();
+            loadEstudiantes();
+            alert('Estudiante vinculado con éxito');
+        });
+
+        function downloadTemplate() {
+            const data = [
+                ["Documento", "Nombre", "Apellido", "Grado", "Sexo_M_o_F", "Nombre_Acudiente", "WhatsApp_Acudiente", "Correo_Acudiente"],
+                ["1001", "Juan", "Perez", "11", "M", "Pedro Perez", "3001234567", "pedro@mail.com"]
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Plantilla");
+            XLSX.writeFile(wb, "Plantilla_Estudiantes_JuanDeDios.xlsx");
+        }
+
+        function importExcel(input) {
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet);
+                
+                rows.forEach(row => {
+                    const est = {
+                        id: row.Documento || row.id,
+                        nom1: row.Nombre || row.nom1,
+                        ape1: row.Apellido || row.ape1,
+                        grado: row.Grado || row.grado,
+                        sexo: row.Sexo_M_o_F || row.sexo || 'M',
+                        acudiente_nom: row.Nombre_Acudiente || row.acudiente_nom,
+                        acudiente_tel: row.WhatsApp_Acudiente || row.acudiente_tel,
+                        acudiente_mail: row.Correo_Acudiente || row.acudiente_mail
+                    };
+                    if (est.id) Storage.addEstudiante(est);
+                });
+                
+                loadEstudiantes();
+                alert(`Se han importado ${rows.length} estudiantes correctamente.`);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        loadEstudiantes();
+    </script>
+</body>
+</html>

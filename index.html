@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema de Asistencias QR</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div id="logoWrapper" style="margin-bottom: 1.5rem;">
+                <img src="img/logo.jpg" alt="Logo" id="mainLogo" style="width: 130px; height: auto;" onerror="this.style.display='none'; document.getElementById('logoSVG').style.display='block';">
+                <!-- SVG Fallback: Reconstrucción del escudo institucional -->
+                <svg id="logoSVG" width="130" height="150" viewBox="0 0 200 230" style="display:none; margin: 0 auto;">
+                    <path d="M10,20 Q100,0 190,20 L190,100 Q190,210 100,225 Q10,210 10,100 Z" fill="white" stroke="#333" stroke-width="2"/>
+                    <path d="M10,80 Q100,60 190,80 L190,100 Q190,210 100,225 Q10,210 10,100 Z" fill="#004a99"/>
+                    <path d="M10,20 Q100,0 190,20 L190,80 Q100,60 10,80 Z" fill="#e31e24"/>
+                    <!-- Antorcha simplificada -->
+                    <rect x="90" y="100" width="20" height="50" fill="#795548" />
+                    <path d="M80,100 L120,100 L110,110 L90,110 Z" fill="#5d4037"/>
+                    <path d="M100,60 Q120,85 100,100 Q80,85 100,60" fill="#ffcc00"/>
+                    <path d="M100,70 Q110,85 100,95 Q90,85 100,70" fill="#ff9800"/>
+                    <!-- Texto -->
+                    <text x="100" y="45" font-family="Arial" font-size="14" font-weight="bold" fill="white" text-anchor="middle">JUAN DE DIOS COCK</text>
+                    <text x="50" y="140" font-family="Arial" font-size="12" font-weight="bold" fill="white" text-anchor="middle" transform="rotate(-45 50,140)">ESTUDIO</text>
+                    <text x="150" y="140" font-family="Arial" font-size="12" font-weight="bold" fill="white" text-anchor="middle" transform="rotate(45 150,140)">PROGRESO</text>
+                </svg>
+            </div>
+            <h1 style="margin-bottom: 0.5rem; color: var(--secondary);">Sistema de Asistencias</h1>
+            <p style="color: var(--text-muted); margin-bottom: 2rem; font-weight: 500;">IE Juan de Dios Cock</p>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Usuario</label>
+                    <input type="text" id="username" placeholder="admin o lector" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="password" placeholder="••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 1rem;">
+                    Iniciar Sesión
+                </button>
+            </form>
+            
+            <p id="errorMsg" style="color: var(--danger); margin-top: 1rem; font-size: 0.9rem; display: none;">
+                ❌ Credenciales incorrectas
+            </p>
+            
+            <div style="margin-top: 1.5rem; border-top: 1px solid #f1f5f9; padding-top: 1.5rem;">
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem; text-align: center;">¿Eres estudiante?</p>
+                <a href="lector-qr.html" class="btn" style="background: #f1f5f9; width: 100%; justify-content: center; color: var(--secondary); border: 1px solid #e2e8f0; text-decoration: none;">
+                    <i class="fas fa-qrcode"></i> Ir al Lector Público
+                </a>
+            </div>
+
+            <div style="margin-top: 1.5rem; font-size: 0.8rem; color: var(--text-muted);">
+                Prototipo TRL5 - Metodologías Ágiles
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        Auth.checkSession();
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            
+            if (Auth.login(user, pass)) {
+                window.location.href = 'dashboard.html';
+            } else {
+                document.getElementById('errorMsg').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

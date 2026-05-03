@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lector de Asistencias - Juan de Dios Cock</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container" id="app-wrap">
+        <aside class="sidebar" id="sidebar-container"></aside>
+        
+        <!-- Bloqueo de Activación con mejor diseño -->
+        <div id="activationLock" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #1e293b, #0f172a); z-index: 9999; display: flex; align-items: center; justify-content: center; color: white; flex-direction: column; text-align: center; padding: 2rem;">
+            <div style="background: rgba(255,255,255,0.05); padding: 3rem; border-radius: 2rem; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); max-width: 500px; width: 100%;">
+                <div style="width: 80px; height: 80px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 2rem; box-shadow: 0 0 30px rgba(227, 30, 36, 0.4);">
+                    <i class="fas fa-key"></i>
+                </div>
+                <h2 style="font-size: 1.8rem; margin-bottom: 0.5rem;">Activar Terminal</h2>
+                <p style="margin-bottom: 2rem; opacity: 0.7;">Por seguridad, ingresa el PIN administrativo para habilitar el escáner de asistencia.</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <input type="password" id="activatePin" placeholder="Ingrese PIN (1234)" style="padding: 1rem; border-radius: 12px; border: 2px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; text-align: center; font-size: 1.2rem; letter-spacing: 5px;">
+                    <button onclick="activateScanner()" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 1rem; font-size: 1.1rem;">
+                        Activar Ahora
+                    </button>
+                </div>
+                <a href="index.html" style="margin-top: 2rem; display: block; color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.9rem;">
+                    <i class="fas fa-arrow-left"></i> Volver al Inicio
+                </a>
+            </div>
+        </div>
+
+        <main class="main-content">
+            <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1 id="headerTitle"><i class="fas fa-qrcode"></i> Registro Digital</h1>
+                </div>
+                <div id="adminLink" style="display: flex; gap: 10px;">
+                    <button onclick="deactivateScanner()" class="btn" style="background: var(--primary); color: white;">
+                        <i class="fas fa-power-off"></i> Cerrar Terminal
+                    </button>
+                    <a href="index.html" class="btn" style="background: var(--secondary); color: white;">
+                        <i class="fas fa-cog"></i> Gestión Admin
+                    </a>
+                </div>
+            </header>
+
+            <!-- Banner Institucional Premium -->
+            <div id="publicWelcome" style="margin-bottom: 3rem; background: linear-gradient(135deg, #004a99 0%, #e31e24 100%); border-radius: 2rem; padding: 4rem 2rem; color: white; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.1); position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+                <div style="position: relative; z-index: 1;">
+                    <h2 style="font-size: 2.8rem; font-weight: 800; margin-bottom: 1rem; text-shadow: 0 4px 10px rgba(0,0,0,0.2);">¡BIENVENIDOS ESTUDIANTES!</h2>
+                    <p style="font-size: 1.25rem; font-weight: 300; letter-spacing: 2px; text-transform: uppercase;">I.E. JUAN DE DIOS COCK</p>
+                    <div style="margin-top: 2rem; display: inline-flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.15); padding: 10px 25px; border-radius: 50px; backdrop-filter: blur(5px);">
+                        <i class="fas fa-info-circle"></i> Presenta tu código QR frente a la cámara
+                    </div>
+                </div>
+            </div>
+
+            <div id="scannerUI" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 3rem; max-width: 1200px; margin: 0 auto;">
+                <!-- Escáner -->
+                <div class="card" style="padding: 2rem; display: flex; flex-direction: column; align-items: center;">
+                    <h3 style="margin-bottom: 1.5rem;"><i class="fas fa-camera"></i> Escáner de Cámara</h3>
+                    <div id="reader" style="width: 100%; max-width: 400px; border-radius: 1rem; overflow: hidden; border: 4px solid #f1f5f9;"></div>
+                    <div style="margin-top: 1.5rem; width: 100%;">
+                        <button id="startScan" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                            <i class="fas fa-play"></i> Iniciar Cámara
+                        </button>
+                        <button id="stopScan" class="btn" style="width: 100%; justify-content: center; display: none; background: var(--danger); color: white;">
+                            <i class="fas fa-stop"></i> Detener Cámara
+                        </button>
+                    </div>
+                    
+                    <div style="margin-top: 2rem; width: 100%; border-top: 1px solid #eee; padding-top: 2rem;">
+                        <h4 style="margin-bottom: 1rem; color: var(--text-muted);">Registro Manual</h4>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="manualId" placeholder="Documento ID" style="flex: 1;">
+                            <button onclick="processResult(document.getElementById('manualId').value)" class="btn btn-primary">Registrar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resultado -->
+                <div id="resultContainer" style="display: flex; flex-direction: column; justify-content: center;">
+                    <!-- Estado Espera -->
+                    <div id="waitingState" style="text-align: center; padding: 4rem; color: var(--text-muted); background: rgba(255,255,255,0.5); border: 2px dashed var(--border); border-radius: 2rem;">
+                        <i class="fas fa-id-card" style="font-size: 5rem; margin-bottom: 1.5rem; opacity: 0.3;"></i>
+                        <h3>Esperando escaneo...</h3>
+                        <p>Los datos aparecerán aquí</p>
+                    </div>
+
+                    <!-- Card Resultado -->
+                    <div id="resultCard" class="card" style="display: none; border: none; box-shadow: 0 20px 50px rgba(0,0,0,0.1); overflow: hidden; animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                        <div id="resultHeader" style="padding: 1.5rem; text-align: center; color: white; font-weight: 700; letter-spacing: 1px;">
+                            REGISTRO DETECTADO
+                        </div>
+                        <div style="padding: 2.5rem; text-align: center;">
+                            <img id="estPhotoImg" src="" alt="Foto" style="width: 150px; height: 150px; border-radius: 50%; border: 6px solid white; box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin-bottom: 1.5rem; object-fit: cover;">
+                            <h2 id="estName" style="font-size: 1.8rem; margin-bottom: 0.5rem;">Nombre</h2>
+                            <p id="estInfo" style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 1.5rem;">Grado</p>
+                            
+                            <div id="typeBadge" style="display: inline-block; padding: 10px 30px; border-radius: 50px; font-weight: 800; font-size: 1.2rem; text-transform: uppercase;">
+                                <span id="timeInfo">ENTRADA</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Error -->
+                    <div id="errorCard" class="card" style="display: none; border-left: 6px solid var(--danger); background: #fef2f2;">
+                        <h3 style="color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Estudiante no encontrado</h3>
+                        <p>El documento ingresado no coincide con ningún registro activo en el sistema.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <style>
+        @keyframes slideIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #1e293b;
+            color: white;
+            padding: 1.25rem 2.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+            border-left: 5px solid #25d366;
+        }
+    </style>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        const session = Auth.checkSession();
+        const appWrap = document.getElementById('app-wrap');
+        const mainContent = document.querySelector('.main-content');
+        
+        if (!session) {
+            appWrap.classList.add('public-layout');
+            document.getElementById('sidebar-container').style.display = 'none';
+            if (sessionStorage.getItem('scannerActive')) {
+                document.getElementById('activationLock').style.display = 'none';
+            }
+        } else {
+            document.getElementById('adminLink').style.display = 'none';
+            document.getElementById('publicWelcome').style.display = 'none';
+            document.getElementById('activationLock').style.display = 'none';
+            document.getElementById('headerTitle').innerHTML = '<i class="fas fa-camera"></i> Modo Administrativo';
+        }
+
+        function activateScanner() {
+            const pin = document.getElementById('activatePin').value;
+            const config = Storage.getConfig();
+            const correctPin = config.pin_activacion || '1234';
+
+            if (pin === correctPin) {
+                document.getElementById('activationLock').style.display = 'none';
+                sessionStorage.setItem('scannerActive', 'true');
+                startCamera(); // Iniciar cámara automáticamente tras activar
+            } else {
+                alert('PIN de activación incorrecto');
+            }
+        }
+
+        function deactivateScanner() {
+            if (confirm('¿Desea cerrar el terminal? Se requerirá el PIN para volver a activarlo.')) {
+                sessionStorage.removeItem('scannerActive');
+                document.getElementById('activationLock').style.display = 'flex';
+                html5QrCode.stop().then(() => {
+                    startBtn.style.display = 'block';
+                    stopBtn.style.display = 'none';
+                }).catch(() => {});
+            }
+        }
+
+        function showNotification(data) {
+            const est = Storage.getEstudiantes().find(e => e.id === data.id_doc);
+            if (!est) return;
+
+            const isEntrada = data.tipo === 'ENTRADA';
+            const color = isEntrada ? '#25d366' : '#e31e24';
+            const icon = isEntrada ? 'fa-sign-in-alt' : 'fa-sign-out-alt';
+
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.borderLeft = `5px solid ${color}`;
+            toast.innerHTML = `
+                <div style="font-size: 2rem; color: ${color};">
+                    <i class="fab fa-whatsapp"></i>
+                </div>
+                <div>
+                    <strong style="display: block;">Aviso de ${data.tipo} Enviado</strong>
+                    <small>Notificando a: ${est.acudiente_nom}</small>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+            
+            // Log en consola para evidencia técnica
+            console.log(`[NOTIFICACIÓN] ${data.tipo} - Estudiante: ${data.nombre} - Enviado a: ${est.acudiente_tel}`);
+        }
+
+        const html5QrCode = new Html5Qrcode("reader");
+        const startBtn = document.getElementById('startScan');
+        const stopBtn = document.getElementById('stopScan');
+        const qrConfig = { fps: 30, qrbox: 250 };
+
+        function startCamera() {
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'block';
+            html5QrCode.start({ facingMode: "environment" }, qrConfig, (decodedText) => {
+                html5QrCode.pause();
+                processResult(decodedText);
+                setTimeout(() => html5QrCode.resume(), 3000);
+            }).catch(err => {
+                console.error("Error de cámara: ", err);
+                startBtn.style.display = 'block';
+                stopBtn.style.display = 'none';
+            });
+        }
+
+        startBtn.addEventListener('click', startCamera);
+
+        stopBtn.addEventListener('click', () => {
+            html5QrCode.stop().then(() => {
+                startBtn.style.display = 'block';
+                stopBtn.style.display = 'none';
+            });
+        });
+
+        // Iniciar si ya está activo
+        if (sessionStorage.getItem('scannerActive') || session) {
+            // Un pequeño delay para asegurar que el DOM esté listo
+            setTimeout(startCamera, 500);
+        }
+
+        function processResult(id) {
+            const result = Storage.registrarAsistencia(id);
+            const waitingState = document.getElementById('waitingState');
+            const resultCard = document.getElementById('resultCard');
+            const errorCard = document.getElementById('errorCard');
+            const est = Storage.getEstudiantes().find(e => e.id === id);
+
+            waitingState.style.display = 'none';
+
+            if (result && est) {
+                errorCard.style.display = 'none';
+                resultCard.style.display = 'block';
+                document.getElementById('estName').textContent = result.nombre;
+                document.getElementById('estInfo').textContent = `Grado: ${result.grado}° | ID: ${id}`;
+                document.getElementById('timeInfo').textContent = `${result.tipo} - ${result.hora_entrada || result.hora_salida}`;
+                
+                const header = document.getElementById('resultHeader');
+                const badge = document.getElementById('typeBadge');
+                if (result.tipo === 'ENTRADA') {
+                    header.style.background = 'var(--success)';
+                    badge.style.background = '#dcfce7';
+                    badge.style.color = '#166534';
+                } else {
+                    header.style.background = 'var(--primary)';
+                    badge.style.background = '#fee2e2';
+                    badge.style.color = '#991b1b';
+                }
+
+                const gender = est.sexo === 'F' ? 'women' : 'men';
+                const photoId = Math.abs(id.split('').reduce((a,b)=>a+b.charCodeAt(0),0)) % 99;
+                document.getElementById('estPhotoImg').src = `https://randomuser.me/api/portraits/med/${gender}/${photoId}.jpg`;
+                
+                showNotification(result);
+                
+                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3');
+                audio.play().catch(() => {});
+
+                setTimeout(() => {
+                    resultCard.style.display = 'none';
+                    waitingState.style.display = 'block';
+                }, 5000);
+            } else {
+                resultCard.style.display = 'none';
+                errorCard.style.display = 'block';
+                setTimeout(() => {
+                    errorCard.style.display = 'none';
+                    waitingState.style.display = 'block';
+                }, 3000);
+            }
+        }
+    </script>
+</body>
+</html>

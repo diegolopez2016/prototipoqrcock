@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurar Horarios - Asistencias QR</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar-container"></aside>
+        
+        <main class="main-content">
+            <header style="margin-bottom: 2rem;">
+                <h1>⏰ Configuración de Horarios</h1>
+                <p style="color: var(--text-muted);">Define los tiempos de entrada, salida y tolerancia</p>
+            </header>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                <!-- Formulario -->
+                <div class="card">
+                    <h3><i class="fas fa-plus-circle"></i> Nuevo Horario</h3>
+                    <form id="horarioForm" style="margin-top: 1rem;">
+                        <div class="form-group">
+                            <label>Nombre del Evento</label>
+                            <input type="text" id="h_nombre" placeholder="Ej: Entrada General" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Hora</label>
+                            <input type="time" id="h_hora" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Tolerancia (minutos)</label>
+                            <input type="number" id="h_tolerancia" value="0" min="0">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                            <i class="fas fa-save"></i> Guardar Horario
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Seguridad -->
+                <div class="card">
+                    <h3><i class="fas fa-shield-alt"></i> Seguridad del Terminal</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Configura el PIN requerido para activar el lector público de QR.</p>
+                    <div class="form-group">
+                        <label>PIN de Activación Actual</label>
+                        <input type="password" id="pinActivacion" placeholder="PIN actual">
+                    </div>
+                    <button onclick="savePin()" class="btn btn-primary" style="width: 100%; justify-content: center; background: var(--secondary);">
+                        <i class="fas fa-key"></i> Actualizar PIN
+                    </button>
+                    <div id="pinMsg" style="margin-top: 10px; font-size: 0.8rem; text-align: center; display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Lista -->
+            <div class="card" style="margin-top: 2rem;">
+                <h3><i class="fas fa-list-clock"></i> Horarios Configurados</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Hora Base</th>
+                                <th>Tolerancia</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="horariosTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        Auth.checkSession();
+        
+        // Cargar PIN inicial
+        const config = Storage.getConfig();
+        document.getElementById('pinActivacion').value = config.pin_activacion || '1234';
+
+        function savePin() {
+            const newPin = document.getElementById('pinActivacion').value;
+            if (newPin.length < 4) {
+                alert('El PIN debe tener al menos 4 dígitos');
+                return;
+            }
+            Storage.saveConfig({ pin_activacion: newPin });
+            const msg = document.getElementById('pinMsg');
+            msg.textContent = '✅ PIN actualizado correctamente';
+            msg.style.display = 'block';
+            msg.style.color = 'var(--success)';
+            setTimeout(() => msg.style.display = 'none', 3000);
+        }
+
+        function loadHorarios() {
+            const list = Storage.getHorarios();
+            const tbody = document.getElementById('horariosTable');
+            tbody.innerHTML = list.map(h => `
+                <tr>
+                    <td><strong>${h.nombre}</strong></td>
+                    <td>${h.hora}</td>
+                    <td>${h.tolerancia} min</td>
+                    <td><span class="badge ${h.activo ? 'badge-success' : 'badge-danger'}">${h.activo ? 'Activo' : 'Inactivo'}</span></td>
+                    <td>
+                        <button onclick="deleteHorario(${h.id})" class="btn" style="padding: 5px 10px; background: #fee2e2; color: #991b1b;">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        document.getElementById('horarioForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const list = Storage.getHorarios();
+            const nuevo = {
+                id: Date.now(),
+                nombre: document.getElementById('h_nombre').value,
+                hora: document.getElementById('h_hora').value,
+                tolerancia: document.getElementById('h_tolerancia').value,
+                activo: true
+            };
+            list.push(nuevo);
+            Storage.saveHorarios(list);
+            e.target.reset();
+            loadHorarios();
+        });
+
+        window.deleteHorario = (id) => {
+            if(confirm('¿Seguro que deseas eliminar este horario?')) {
+                const list = Storage.getHorarios().filter(h => h.id !== id);
+                Storage.saveHorarios(list);
+                loadHorarios();
+            }
+        };
+
+        loadHorarios();
+    </script>
+</body>
+</html>
